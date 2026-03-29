@@ -1,0 +1,91 @@
+# ============================================================
+# Visual: Rectangular -> 1 Sigma Standard Uncertainty
+# ============================================================
+
+library(ggplot2)
+library(gridExtra)
+
+# Use Foundation as the example component
+low  <- foundation_low
+high <- foundation_high
+mid  <- (low + high) / 2
+u    <- foundation_uncertainty / sqrt(12)  # 1 sigma standard uncertainty
+
+x <- seq(low - 20000, high + 20000, length.out = 1000)
+
+# --- Plot 1: Rectangular Distribution ---
+rect_y <- ifelse(x >= low & x <= high, 1 / (high - low), 0)
+rect_df <- data.frame(x = x, y = rect_y)
+
+p1 <- ggplot(rect_df, aes(x = x, y = y)) +
+  geom_area(fill = "#2E5F8A", alpha = 0.3) +
+  geom_line(color = "#2E5F8A", linewidth = 1) +
+  geom_vline(xintercept = mid, linetype = "dashed", color = "#1F3864", linewidth = 0.8) +
+  annotate("text", x = mid, y = max(rect_y) * 1.12,
+           label = "Midpoint", hjust = -0.1, size = 3.2, color = "#1F3864") +
+  annotate("text", x = low, y = -max(rect_y) * 0.08,
+           label = paste0("$", formatC(low, format="d", big.mark=",")),
+           size = 3, color = "#1F3864", hjust = 0.5) +
+  annotate("text", x = high, y = -max(rect_y) * 0.08,
+           label = paste0("$", formatC(high, format="d", big.mark=",")),
+           size = 3, color = "#1F3864", hjust = 0.5) +
+  scale_x_continuous(labels = scales::dollar_format()) +
+  labs(
+    title = "Step 1: Rectangular Distribution",
+    subtitle = "Equal probability across full range",
+    x = "Cost ($)", y = "Probability Density"
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(
+    plot.title    = element_text(face = "bold", color = "#1F3864"),
+    plot.subtitle = element_text(color = "#444444", size = 9),
+    panel.grid.minor = element_blank()
+  )
+
+# --- Plot 2: Normal Distribution at 1 Sigma ---
+norm_y <- dnorm(x, mean = mid, sd = u)
+norm_df <- data.frame(x = x, y = norm_y)
+
+shade_1s <- subset(norm_df, x >= mid - u & x <= mid + u)
+
+p2 <- ggplot(norm_df, aes(x = x, y = y)) +
+  geom_area(data = shade_1s, aes(x = x, y = y), fill = "#2E5F8A", alpha = 0.3) +
+  geom_line(color = "#2E5F8A", linewidth = 1) +
+  geom_vline(xintercept = mid, linetype = "dashed", color = "#1F3864", linewidth = 0.8) +
+  geom_vline(xintercept = mid - u, linetype = "dotted", color = "#888888", linewidth = 0.7) +
+  geom_vline(xintercept = mid + u, linetype = "dotted", color = "#888888", linewidth = 0.7) +
+  annotate("text", x = mid, y = max(norm_y) * 1.05,
+           label = "Mean", hjust = -0.1, size = 3.2, color = "#1F3864") +
+  annotate("text", x = mid, y = max(norm_y) * 0.5,
+           label = "1\u03C3 (~68%)", hjust = -0.1, size = 3.2, color = "#2E5F8A") +
+  annotate("text", x = mid - u, y = -max(norm_y) * 0.05,
+           label = paste0("$", formatC(round(mid - u), format="d", big.mark=",")),
+           size = 3, color = "#888888", hjust = 0.5) +
+  annotate("text", x = mid + u, y = -max(norm_y) * 0.05,
+           label = paste0("$", formatC(round(mid + u), format="d", big.mark=",")),
+           size = 3, color = "#888888", hjust = 0.5) +
+  scale_x_continuous(labels = scales::dollar_format()) +
+  labs(
+    title = "Step 2: Standard Uncertainty (1\u03C3)",
+    subtitle = "Range / \u221A12 — one standard deviation",
+    x = "Cost ($)", y = "Probability Density"
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(
+    plot.title    = element_text(face = "bold", color = "#1F3864"),
+    plot.subtitle = element_text(color = "#444444", size = 9),
+    panel.grid.minor = element_blank()
+  )
+
+# --- Combine and Save ---
+combined <- grid.arrange(p1, p2, ncol = 2,
+  top = grid::textGrob(
+    "From Rectangular Distribution to Standard Uncertainty — Foundation Cost",
+    gp = grid::gpar(fontsize = 13, fontface = "bold", col = "#1F3864")
+  )
+)
+
+ggsave("distribution_steps.png", plot = combined,
+       width = 12, height = 5, dpi = 150)
+
+cat("Plot saved: distribution_steps.png\n")
