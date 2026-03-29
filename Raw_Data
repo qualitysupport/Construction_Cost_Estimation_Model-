@@ -1,0 +1,241 @@
+# ============================================================
+# House Build Cost Uncertainty Model
+# GUM Method Case Study
+# ============================================================
+
+# Component 1 - Site Plan
+siteplan_low <- 500
+siteplan_high <- 500
+siteplan_uncertainty <- siteplan_high - siteplan_low
+
+# Component 2 - Drawing
+drawing_low <- 2000
+drawing_high <- 2000
+drawing_uncertainty <- drawing_high - drawing_low
+
+# Component 3 - Permits
+permit_low <- 15000
+permit_high <- 20000
+permit_uncertainty <- permit_high - permit_low
+
+# Component 4 - Foundation
+foundation_low <- 50000
+foundation_high <- 70000
+foundation_uncertainty <- foundation_high - foundation_low
+
+# Component 5 - Framing
+framing_low <- 10000
+framing_high <- 40000
+framing_uncertainty <- framing_high - framing_low
+
+# Component 6 - Siding
+siding_low <- 10000
+siding_high <- 30000
+siding_uncertainty <- siding_high - siding_low
+
+# Component 7 - Wiring
+wiring_low <- 6000
+wiring_high <- 15000
+wiring_uncertainty <- wiring_high - wiring_low
+
+# Component 8 - Plumbing
+plumbing_low <- 5000
+plumbing_high <- 16000
+plumbing_uncertainty <- plumbing_high - plumbing_low
+
+# Component 9 - HVAC
+hvac_low <- 5000
+hvac_high <- 15000
+hvac_uncertainty <- hvac_high - hvac_low
+
+# Component 10 - Windows
+windows_low <- 5000
+windows_high <- 15000
+windows_uncertainty <- windows_high - windows_low
+
+# Component 11 - Doors
+doors_low <- 5000
+doors_high <- 8000
+doors_uncertainty <- doors_high - doors_low
+
+# Component 12 - Gutters
+gutters_low <- 2000
+gutters_high <- 7000
+gutters_uncertainty <- gutters_high - gutters_low
+
+# Component 13 - Roof
+roof_low <- 10000
+roof_high <- 35000
+roof_uncertainty <- roof_high - roof_low
+
+# Component 14 - Insulation
+insulation_low <- 5000
+insulation_high <- 10000
+insulation_uncertainty <- insulation_high - insulation_low
+
+# Component 15 - Drywall
+drywall_low <- 5000
+drywall_high <- 30000
+drywall_uncertainty <- drywall_high - drywall_low
+
+# Component 16 - Trim
+trim_low <- 500
+trim_high <- 15000
+trim_uncertainty <- trim_high - trim_low
+
+# Component 17 - Paint
+paint_low <- 100
+paint_high <- 500
+paint_uncertainty <- paint_high - paint_low
+
+# Component 18 - Flooring
+flooring_low <- 5000
+flooring_high <- 15000
+flooring_uncertainty <- flooring_high - flooring_low
+
+# Component 19 - Kitchen
+kitchen_low <- 8000
+kitchen_high <- 12000
+kitchen_uncertainty <- kitchen_high - kitchen_low
+
+# Component 20 - Bathrooms
+bathrooms_low <- 3000
+bathrooms_high <- 6000
+bathrooms_uncertainty <- bathrooms_high - bathrooms_low
+
+# Component 21 - Lighting
+lighting_low <- 500
+lighting_high <- 1000
+lighting_uncertainty <- lighting_high - lighting_low
+
+# Component 22 - Driveway
+driveway_low <- 5000
+driveway_high <- 10000
+driveway_uncertainty <- driveway_high - driveway_low
+
+# Component 23 - Deck
+deck_low <- 10000
+deck_high <- 20000
+deck_uncertainty <- deck_high - deck_low
+
+# Component 24 - Landscape
+landscape_low <- 2000
+landscape_high <- 5000
+landscape_uncertainty <- landscape_high - landscape_low
+
+# ============================================================
+# Print Component Uncertainties
+# ============================================================
+
+cat("=== House Build Cost Uncertainty Summary ===\n\n")
+cat(sprintf("Component 1  - Site Plan:    $%.2f\n", siteplan_uncertainty))
+cat(sprintf("Component 2  - Drawing:      $%.2f\n", drawing_uncertainty))
+cat(sprintf("Component 3  - Permits:      $%.2f\n", permit_uncertainty))
+cat(sprintf("Component 4  - Foundation:   $%.2f\n", foundation_uncertainty))
+cat(sprintf("Component 5  - Framing:      $%.2f\n", framing_uncertainty))
+cat(sprintf("Component 6  - Siding:       $%.2f\n", siding_uncertainty))
+cat(sprintf("Component 7  - Wiring:       $%.2f\n", wiring_uncertainty))
+cat(sprintf("Component 8  - Plumbing:     $%.2f\n", plumbing_uncertainty))
+cat(sprintf("Component 9  - HVAC:         $%.2f\n", hvac_uncertainty))
+cat(sprintf("Component 10 - Windows:      $%.2f\n", windows_uncertainty))
+cat(sprintf("Component 11 - Doors:        $%.2f\n", doors_uncertainty))
+cat(sprintf("Component 12 - Gutters:      $%.2f\n", gutters_uncertainty))
+cat(sprintf("Component 13 - Roof:         $%.2f\n", roof_uncertainty))
+cat(sprintf("Component 14 - Insulation:   $%.2f\n", insulation_uncertainty))
+cat(sprintf("Component 15 - Drywall:      $%.2f\n", drywall_uncertainty))
+cat(sprintf("Component 16 - Trim:         $%.2f\n", trim_uncertainty))
+cat(sprintf("Component 17 - Paint:        $%.2f\n", paint_uncertainty))
+cat(sprintf("Component 18 - Flooring:     $%.2f\n", flooring_uncertainty))
+cat(sprintf("Component 19 - Kitchen:      $%.2f\n", kitchen_uncertainty))
+cat(sprintf("Component 20 - Bathrooms:    $%.2f\n", bathrooms_uncertainty))
+cat(sprintf("Component 21 - Lighting:     $%.2f\n", lighting_uncertainty))
+cat(sprintf("Component 22 - Driveway:     $%.2f\n", driveway_uncertainty))
+cat(sprintf("Component 23 - Deck:         $%.2f\n", deck_uncertainty))
+cat(sprintf("Component 24 - Landscape:    $%.2f\n", landscape_uncertainty))
+
+# ============================================================
+# RSS - Combined Uncertainty (Rectangular Distributions)
+# ============================================================
+
+# Standard uncertainty for each component: u = (high - low) / sqrt(12)
+u_siteplan    <- siteplan_uncertainty    / sqrt(12)
+u_drawing     <- drawing_uncertainty     / sqrt(12)
+u_permit      <- permit_uncertainty      / sqrt(12)
+u_foundation  <- foundation_uncertainty  / sqrt(12)
+u_framing     <- framing_uncertainty     / sqrt(12)
+u_siding      <- siding_uncertainty      / sqrt(12)
+u_wiring      <- wiring_uncertainty      / sqrt(12)
+u_plumbing    <- plumbing_uncertainty    / sqrt(12)
+u_hvac        <- hvac_uncertainty        / sqrt(12)
+u_windows     <- windows_uncertainty     / sqrt(12)
+u_doors       <- doors_uncertainty       / sqrt(12)
+u_gutters     <- gutters_uncertainty     / sqrt(12)
+u_roof        <- roof_uncertainty        / sqrt(12)
+u_insulation  <- insulation_uncertainty  / sqrt(12)
+u_drywall     <- drywall_uncertainty     / sqrt(12)
+u_trim        <- trim_uncertainty        / sqrt(12)
+u_paint       <- paint_uncertainty       / sqrt(12)
+u_flooring    <- flooring_uncertainty    / sqrt(12)
+u_kitchen     <- kitchen_uncertainty     / sqrt(12)
+u_bathrooms   <- bathrooms_uncertainty   / sqrt(12)
+u_lighting    <- lighting_uncertainty    / sqrt(12)
+u_driveway    <- driveway_uncertainty    / sqrt(12)
+u_deck        <- deck_uncertainty        / sqrt(12)
+u_landscape   <- landscape_uncertainty   / sqrt(12)
+
+# Combined standard uncertainty (RSS)
+u_combined <- sqrt(
+  u_siteplan^2 + u_drawing^2 + u_permit^2 + u_foundation^2 +
+  u_framing^2 + u_siding^2 + u_wiring^2 + u_plumbing^2 +
+  u_hvac^2 + u_windows^2 + u_doors^2 + u_gutters^2 +
+  u_roof^2 + u_insulation^2 + u_drywall^2 + u_trim^2 +
+  u_paint^2 + u_flooring^2 + u_kitchen^2 + u_bathrooms^2 +
+  u_lighting^2 + u_driveway^2 + u_deck^2 + u_landscape^2
+)
+
+# Expanded uncertainty (k=2, ~95% confidence)
+k <- 2
+U_expanded <- k * u_combined
+
+# Total estimated cost (midpoint of each component)
+total_cost <- sum(
+  (siteplan_low + siteplan_high) / 2,
+  (drawing_low + drawing_high) / 2,
+  (permit_low + permit_high) / 2,
+  (foundation_low + foundation_high) / 2,
+  (framing_low + framing_high) / 2,
+  (siding_low + siding_high) / 2,
+  (wiring_low + wiring_high) / 2,
+  (plumbing_low + plumbing_high) / 2,
+  (hvac_low + hvac_high) / 2,
+  (windows_low + windows_high) / 2,
+  (doors_low + doors_high) / 2,
+  (gutters_low + gutters_high) / 2,
+  (roof_low + roof_high) / 2,
+  (insulation_low + insulation_high) / 2,
+  (drywall_low + drywall_high) / 2,
+  (trim_low + trim_high) / 2,
+  (paint_low + paint_high) / 2,
+  (flooring_low + flooring_high) / 2,
+  (kitchen_low + kitchen_high) / 2,
+  (bathrooms_low + bathrooms_high) / 2,
+  (lighting_low + lighting_high) / 2,
+  (driveway_low + driveway_high) / 2,
+  (deck_low + deck_high) / 2,
+  (landscape_low + landscape_high) / 2
+)
+
+# ============================================================
+# Print Results
+# ============================================================
+
+cat("\n=== GUM Uncertainty Results ===\n\n")
+cat(sprintf("Total Estimated Cost:     $%s\n",   formatC(total_cost,  format="f", digits=2, big.mark=",")))
+cat(sprintf("Combined Uncertainty:     $%s\n",   formatC(u_combined,  format="f", digits=2, big.mark=",")))
+cat(sprintf("Coverage Factor (k):       %d\n",   k))
+cat(sprintf("Expanded Uncertainty:     $%s\n",   formatC(U_expanded,  format="f", digits=2, big.mark=",")))
+cat(sprintf("Lower Bound (95%%):        $%s\n",  formatC(total_cost - U_expanded, format="f", digits=2, big.mark=",")))
+cat(sprintf("Upper Bound (95%%):        $%s\n",  formatC(total_cost + U_expanded, format="f", digits=2, big.mark=",")))
+cat(sprintf("\nWe estimate the house will cost $%s +/- $%s at 95%% confidence.\n",
+    formatC(total_cost, format="f", digits=2, big.mark=","),
+    formatC(U_expanded, format="f", digits=2, big.mark=",")))
