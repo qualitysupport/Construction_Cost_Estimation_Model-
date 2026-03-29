@@ -1,0 +1,289 @@
+# ============================================================
+# House Build Cost Uncertainty — Shiny App
+# GUM Method Case Study
+# ============================================================
+
+library(shiny)
+library(ggplot2)
+library(gridExtra)
+
+# Default component values
+defaults <- list(
+  list(name = "Site Plan",   low = 500,   high = 500),
+  list(name = "Drawing",     low = 2000,  high = 2000),
+  list(name = "Permits",     low = 15000, high = 20000),
+  list(name = "Foundation",  low = 50000, high = 70000),
+  list(name = "Framing",     low = 10000, high = 40000),
+  list(name = "Siding",      low = 10000, high = 30000),
+  list(name = "Wiring",      low = 6000,  high = 15000),
+  list(name = "Plumbing",    low = 5000,  high = 16000),
+  list(name = "HVAC",        low = 5000,  high = 15000),
+  list(name = "Windows",     low = 5000,  high = 15000),
+  list(name = "Doors",       low = 5000,  high = 8000),
+  list(name = "Gutters",     low = 2000,  high = 7000),
+  list(name = "Roof",        low = 10000, high = 35000),
+  list(name = "Insulation",  low = 5000,  high = 10000),
+  list(name = "Drywall",     low = 5000,  high = 30000),
+  list(name = "Trim",        low = 500,   high = 15000),
+  list(name = "Paint",       low = 100,   high = 500),
+  list(name = "Flooring",    low = 5000,  high = 15000),
+  list(name = "Kitchen",     low = 8000,  high = 12000),
+  list(name = "Bathrooms",   low = 3000,  high = 6000),
+  list(name = "Lighting",    low = 500,   high = 1000),
+  list(name = "Driveway",    low = 5000,  high = 10000),
+  list(name = "Deck",        low = 10000, high = 20000),
+  list(name = "Landscape",   low = 2000,  high = 5000)
+)
+
+n <- length(defaults)
+
+# ============================================================
+# UI
+# ============================================================
+
+ui <- fluidPage(
+  titlePanel(
+    div(
+      h2("House Build Cost Uncertainty Model",
+         style = "color: #1F3864; font-weight: bold; margin-bottom: 4px;"),
+      p("GUM Method — Rectangular Distributions",
+        style = "color: #444444; font-size: 14px; margin-top: 0;")
+    )
+  ),
+  
+  sidebarLayout(
+    sidebarPanel(
+      width = 3,
+      
+      # Coverage factor
+      h4("Coverage Factor", style = "color: #1F3864; font-weight: bold;"),
+      sliderInput("k", "k (confidence level)",
+                  min = 1, max = 3, value = 2, step = 0.5),
+      helpText("k=1 (~68%)  k=2 (~95%)  k=3 (~99%)"),
+      
+      hr(),
+      
+      # Component toggles and inputs
+      h4("Components", style = "color: #1F3864; font-weight: bold;"),
+      p("Toggle, adjust low and high values for each component.",
+        style = "font-size: 12px; color: #666;"),
+      
+      # Dynamically generate inputs for each component
+      lapply(seq_len(n), function(i) {
+        comp <- defaults[[i]]
+        div(
+          style = "border-bottom: 1px solid #eee; padding: 8px 0;",
+          checkboxInput(paste0("include_", i), comp$name, value = TRUE),
+          conditionalPanel(
+            condition = paste0("input.include_", i, " == true"),
+            fluidRow(
+              column(6,
+                     numericInput(paste0("low_", i), "Low ($)",
+                                  value = comp$low, min = 0, step = 500)
+              ),
+              column(6,
+                     numericInput(paste0("high_", i), "High ($)",
+                                  value = comp$high, min = 0, step = 500)
+              )
+            )
+          )
+        )
+      })
+    ),
+    
+    mainPanel(
+      width = 9,
+      
+      # Summary metrics
+      fluidRow(
+        column(3,
+               div(style = "background: #f5f7fa; border-radius: 8px; padding: 16px; text-align: center;",
+                   p("Total Estimated Cost", style = "font-size: 12px; color: #888; margin-bottom: 4px;"),
+                   h3(textOutput("total_cost"), style = "color: #1F3864; margin: 0;")
+               )
+        ),
+        column(3,
+               div(style = "background: #f5f7fa; border-radius: 8px; padding: 16px; text-align: center;",
+                   p("Expanded Uncertainty", style = "font-size: 12px; color: #888; margin-bottom: 4px;"),
+                   h3(textOutput("expanded_u"), style = "color: #2E5F8A; margin: 0;")
+               )
+        ),
+        column(3,
+               div(style = "background: #f5f7fa; border-radius: 8px; padding: 16px; text-align: center;",
+                   p("Lower Bound", style = "font-size: 12px; color: #888; margin-bottom: 4px;"),
+                   h3(textOutput("lower_bound"), style = "color: #2E5F8A; margin: 0;")
+               )
+        ),
+        column(3,
+               div(style = "background: #f5f7fa; border-radius: 8px; padding: 16px; text-align: center;",
+                   p("Upper Bound", style = "font-size: 12px; color: #888; margin-bottom: 4px;"),
+                   h3(textOutput("upper_bound"), style = "color: #B22222; margin: 0;")
+               )
+        )
+      ),
+      
+      br(),
+      
+      # Tabs for plots
+      tabsetPanel(
+        tabPanel("Tornado Chart",
+                 br(),
+                 plotOutput("tornado", height = "550px")
+        ),
+        tabPanel("Normal Curve",
+                 br(),
+                 plotOutput("normal_curve", height = "500px")
+        )
+      )
+    )
+  )
+)
+
+# ============================================================
+# Server
+# ============================================================
+
+server <- function(input, output, session) {
+  
+  # Reactive: compute results from current inputs
+  results <- reactive({
+    components <- lapply(seq_len(n), function(i) {
+      if (!isTRUE(input[[paste0("include_", i)]])) return(NULL)
+      lo   <- input[[paste0("low_",  i)]]
+      hi   <- input[[paste0("high_", i)]]
+      if (is.null(lo) || is.null(hi) || hi < lo) return(NULL)
+      list(
+        name        = defaults[[i]]$name,
+        low         = lo,
+        high        = hi,
+        mid         = (lo + hi) / 2,
+        uncertainty = (hi - lo) / sqrt(12)
+      )
+    })
+    components <- Filter(Negate(is.null), components)
+    
+    if (length(components) == 0) return(NULL)
+    
+    u_values   <- sapply(components, `[[`, "uncertainty")
+    mid_values <- sapply(components, `[[`, "mid")
+    names_vec  <- sapply(components, `[[`, "name")
+    
+    u_combined  <- sqrt(sum(u_values^2))
+    total_cost  <- sum(mid_values)
+    k           <- input$k
+    U_expanded  <- k * u_combined
+    
+    list(
+      components  = components,
+      u_values    = u_values,
+      names_vec   = names_vec,
+      u_combined  = u_combined,
+      total_cost  = total_cost,
+      k           = k,
+      U_expanded  = U_expanded,
+      lower       = total_cost - U_expanded,
+      upper       = total_cost + U_expanded
+    )
+  })
+  
+  # Summary outputs
+  fmt <- function(x) paste0("$", formatC(round(x), format="d", big.mark=","))
+  
+  output$total_cost   <- renderText({ req(results()); fmt(results()$total_cost) })
+  output$expanded_u   <- renderText({ req(results()); paste0("\u00B1", fmt(results()$U_expanded)) })
+  output$lower_bound  <- renderText({ req(results()); fmt(results()$lower) })
+  output$upper_bound  <- renderText({ req(results()); fmt(results()$upper) })
+  
+  # Tornado chart
+  output$tornado <- renderPlot({
+    req(results())
+    r <- results()
+    
+    df <- data.frame(
+      name        = r$names_vec,
+      uncertainty = r$u_values
+    )
+    df <- df[order(df$uncertainty), ]
+    df$name <- factor(df$name, levels = df$name)
+    
+    ggplot(df, aes(x = uncertainty, y = name)) +
+      geom_bar(stat = "identity", fill = "#2E5F8A", alpha = 0.8) +
+      geom_text(aes(label = paste0("$", formatC(round(uncertainty), format="d", big.mark=","))),
+                hjust = -0.1, size = 3.2, color = "#1F3864") +
+      scale_x_continuous(
+        labels = scales::dollar_format(),
+        expand = expansion(mult = c(0, 0.2))
+      ) +
+      labs(
+        title    = "Uncertainty Contribution by Component",
+        subtitle = "Standard uncertainty (1\u03C3) per component — ranked lowest to highest",
+        x        = "Standard Uncertainty ($)",
+        y        = NULL
+      ) +
+      theme_minimal(base_size = 12) +
+      theme(
+        plot.title       = element_text(face = "bold", color = "#1F3864", size = 14),
+        plot.subtitle    = element_text(color = "#444444", size = 10),
+        panel.grid.minor  = element_blank(),
+        panel.grid.major.y = element_blank(),
+        axis.text.y      = element_text(size = 10, color = "#1F3864")
+      )
+  })
+  
+  # Normal curve
+  output$normal_curve <- renderPlot({
+    req(results())
+    r <- results()
+    
+    x    <- seq(r$total_cost - 4 * r$u_combined,
+                r$total_cost + 4 * r$u_combined,
+                length.out = 1000)
+    ny   <- dnorm(x, mean = r$total_cost, sd = r$u_combined)
+    df   <- data.frame(x = x, y = ny)
+    sh   <- subset(df, x >= r$lower & x <= r$upper)
+    
+    ggplot(df, aes(x = x, y = y)) +
+      geom_area(data = sh, aes(x = x, y = y), fill = "#2E5F8A", alpha = 0.3) +
+      geom_line(color = "#2E5F8A", linewidth = 1) +
+      geom_vline(xintercept = r$total_cost, linetype = "dashed",
+                 color = "#1F3864", linewidth = 0.8) +
+      geom_vline(xintercept = r$lower, linetype = "dotted",
+                 color = "#888888", linewidth = 0.7) +
+      geom_vline(xintercept = r$upper, linetype = "dotted",
+                 color = "#888888", linewidth = 0.7) +
+      annotate("text", x = r$total_cost, y = max(ny) * 1.05,
+               label = paste0("Est. Cost\n$", formatC(round(r$total_cost), format="d", big.mark=",")),
+               hjust = -0.1, size = 3.5, color = "#1F3864") +
+      annotate("text", x = r$lower, y = -max(ny) * 0.05,
+               label = paste0("$", formatC(round(r$lower), format="d", big.mark=",")),
+               size = 3, color = "#888888", hjust = 0.5) +
+      annotate("text", x = r$upper, y = -max(ny) * 0.05,
+               label = paste0("$", formatC(round(r$upper), format="d", big.mark=",")),
+               size = 3, color = "#888888", hjust = 0.5) +
+      annotate("text", x = r$total_cost, y = max(ny) * 0.45,
+               label = paste0("k=", r$k, " (~",
+                              ifelse(r$k == 1, "68", ifelse(r$k == 2, "95", "99")),
+                              "%) Confidence\n\u00B1$",
+                              formatC(round(r$U_expanded), format="d", big.mark=",")),
+               hjust = -0.1, size = 3.5, color = "#2E5F8A") +
+      scale_x_continuous(labels = scales::dollar_format()) +
+      labs(
+        title    = "How Much Do We Need to Borrow?",
+        subtitle = "Combined uncertainty across all active components",
+        x        = "Total Estimated Cost ($)",
+        y        = "Probability Density"
+      ) +
+      theme_minimal(base_size = 12) +
+      theme(
+        plot.title    = element_text(face = "bold", color = "#1F3864", size = 14),
+        plot.subtitle = element_text(color = "#444444", size = 10),
+        panel.grid.minor = element_blank()
+      )
+  })
+}
+
+# ============================================================
+# Run App
+# ============================================================
+
+shinyApp(ui = ui, server = server)
